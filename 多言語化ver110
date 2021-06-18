@@ -1,0 +1,946 @@
+#==============================================================================
+# ■ 多言語化 by gentlawk via ココナラ ver1.10
+#------------------------------------------------------------------------------
+# Copyright (c) 2021 gentlawk
+# このスクリプトはMITライセンスです。
+# また、以下のスクリプトを参考にして作成しています。
+# https://github.com/yamachan/jgss-hack/blob/master/RTK1_Option_EnJa.ja.md
+# Copyright (c) 2016 Toshio Yamashita (yamachan)
+# https://opensource.org/licenses/mit-license.php
+#==============================================================================
+#------------------------------------------------------------------------------
+# ■内容
+# ゲームの多言語化対応を可能にします。
+#
+# ■位置
+# とくになし
+#
+# ■使用方法
+# 詳細設定欄にて言語定義と保持変数を設定します。
+# ○LANG
+#   使用する言語の定義です。
+#   例)
+#     LANG = [
+#       :ja, # 日本語
+#       :en, # 英語
+#       :zh, # 中国語
+#     ]
+#
+#   上記例「:ja」のように、任意の言語を追加してください。
+#   jaの部分は任意の文字列に変更可能です。
+#   一番上から0,1,2…と番号が振られ、0がメイン言語になります(例の場合日本語)。
+#   メイン言語はゲーム初プレイ時の最初の言語になります。
+#   また、後述するLANG_VARで指定した変数には現在の言語の番号が格納されます。
+#
+# ○LANG_VAR
+#   現在の言語を保持する変数IDです。
+#   LANGが上記例の場合、現在の言語が英語であれば変数には1が格納されます。
+#   
+# ▼言語の変更方法
+# 1. LANG_VARで指定した変数の値を変更する
+#   こちらの方法ではイベントコマンドで簡単に変更できます。
+# 2. 以下スクリプトを実行する(「:ja」は任意の言語に変更してください)
+#     Lang.set(:ja)
+#   こちらの方法では言語名で指定するので言語定義の順番を変えても影響がなく、
+#   どの言語に設定したかわかりやすいメリットがあります。
+#
+# ▼言語の判定方法
+# 1. LANG_VARでで指定した変数の値を参照する
+#   こちらの方法ではイベントのページ指定等で便利です。
+# 2. 以下スクリプトを条件分岐で実行する(「ja」は任意の言語に変更してください)
+#     Lang.ja?
+#   こちらの方法では言語名で指定するので言語定義の順番を変えても影響がなく、
+#   どの言語に設定したかわかりやすいメリットがあります。
+#
+# ▼言語の共通設定化
+# このスクリプト単体では、セーブデータごとに言語設定を保持します。
+# また、タイトル画面では常にメイン言語で表示されることになります。
+# ゲーム全体のオプションとして言語変更を行いたい場合は
+# 「コモンセーブデータ」スクリプトを併用してください。
+# このスクリプトを使用すると指定したスイッチ、変数を共通データとして扱えるようになります。
+# LANG_VARで指定した変数IDをコモンセーブデータでも指定することで言語の共通設定化が可能です。
+#
+# ▼翻訳データの作成方法
+# 1. データベースで設定
+# 2. スクリプトエディタの定義データで設定
+#   機能、一括管理などの面でおすすめは2番になります。
+#   1の場合Vocab(いくつかの用語とメッセージ)と名前入力ウインドウが変更できず、
+#   データベースウインドウでの文字数制限で設定しづらい場合があります。
+#   また、いずれの場合も設定されていないデータはデータベースの値を表示します。
+#
+# ○1. データベースで設定 の場合
+# - アクター
+#   メモ欄に以下のフォーマットで指定言語の名前、二つ名、説明を設定します。
+#     <ja:エリック,銀の死神,狂戦士と化す(笑)>
+# - 職業
+#   メモ欄に以下のフォーマットで指定言語の名前を設定します。
+#     <en:Warrior>
+# - エネミー
+#   メモ欄に以下のフォーマットで指定言語の名前を設定します。
+#     <en:Slime>
+# - アイテム
+#   メモ欄に以下のフォーマットで指定言語の名前、説明を設定します。
+#     <ja:ポーション,ＨＰを５００ポイント回復する。>
+# - スキル
+#   メモ欄に以下のフォーマットで指定言語の名前、説明、メッセージ上段、メッセージ下段を設定します。
+#     <en:Attack,Basic attack skill, is attacked!,>
+# - 武器
+#   メモ欄に以下のフォーマットで指定言語の名前、説明を設定します。
+#     <en:Hand Axe,A small axe for logging>
+# - 防具
+#   メモ欄に以下のフォーマットで指定言語の名前、説明を設定します。
+#     <ja:普段着,通気性の高い布の服。>
+# - ステート
+#   メモ欄に以下のフォーマットで指定言語の名前、メッセージ(味方)、メッセージ(敵)、メッセージ(継続)、メッセージ(解除)を設定します。
+#     <en:dead, died!, was defeated!,,was revived!>
+# - マップ
+#   メモ欄に以下のフォーマットで指定言語の表示名を設定します。
+#     <en:Town>
+# - 用語:属性
+#   セパレータ「||」で区切ることで言語毎の名前を設定します(言語の定義順に設定します)。
+#   例) 物理||Physical
+# - 用語:スキルタイプ
+#   セパレータ「||」で区切ることで言語毎の名前を設定します(言語の定義順に設定します)。
+#   例) 特技||Special
+# - 用語:武器タイプ
+#   セパレータ「||」で区切ることで言語毎の名前を設定します(言語の定義順に設定します)。
+#   例) 斧||Axe
+# - 用語:防具タイプ
+#   セパレータ「||」で区切ることで言語毎の名前を設定します(言語の定義順に設定します)。
+#   例) 一般防具||CommonArmor
+# - 用語:基本ステータス
+#   セパレータ「||」で区切ることで言語毎の名前を設定します(言語の定義順に設定します)。
+#   例) レベル||Level
+# - 用語:能力値
+#   セパレータ「||」で区切ることで言語毎の名前を設定します(言語の定義順に設定します)。
+#   例) 最大ＨＰ||MaxHP
+# - 用語:装備タイプ
+#   セパレータ「||」で区切ることで言語毎の名前を設定します(言語の定義順に設定します)。
+#   例) 武器||Weapon
+# - 用語:コマンド
+#   セパレータ「||」で区切ることで言語毎の名前を設定します(言語の定義順に設定します)。
+#   例) 一般防具||CommonArmor
+# ※ショップの「購入する」等スクリプトのVocabで定義されている用語を設定するには
+#   後述する 2. スクリプトエディタの定義データで設定 を行う必要があります
+#
+#
+# ○2. スクリプトエディタの定義データで設定 の場合
+# まず、ゲーム中どこでもいいのでイベントコマンドのスクリプトで以下を実行します。
+#   Lang.make_template
+# すると、プロジェクトのフォルダに「ml_definition_template.txt」というテキストファイルが生成されます。
+# このファイルには翻訳設定のテンプレートが出力されます。
+# テンプレートは出力時点のデータベース等で設定されているデータが含まれています。
+#
+# 次に、スクリプトエディタに新規項目を追加し、テンプレートの中身をすべてコピー＆ペーストします。
+# 項目の名前は任意に設定してください。
+# 2行目の <設定する言語を指定> に設定する言語を記入してください。
+# 例) 英語の翻訳定義データを作る場合
+#   $gentlawk_multi_language_definition[:en] =
+# あとは出力されたデータを指定の言語で翻訳したものに書き換えれば定義データの完成です。
+# ただし、:input_tablesについては少し特殊なので後述します。
+# ゲームを実行すると定義データを自動的に読み込んで表示します。
+# 不要なデータ行は削除しても構いません。
+# 
+# ○注意点
+# 同じ言語、データに対して「1. データベースで設定」「2. スクリプトエディタの定義データで設定」
+# の両方が定義されている場合は「2. スクリプトエディタの定義データで設定」の設定が優先されます。
+#
+# ○:input_tablesについて
+# :input_tablesは名前入力の処理に使われる入力ウインドウの定義になります。
+# 計90項目からなる配列が1セットになっており、これが入力ウインドウの1ページになります。
+# このセットを任意の数並べることで2ページ目、3ページ目と追加していくことができます。
+# また、各セットの最後の2項目は必ず「ページ切り替え」「決定」の役割のボタンになるのでご注意ください。
+#
+# ▼イベントコマンド：アクターの名前、二つ名の変更について
+# こちらの2つのコマンドを普通に実行するとメイン言語(LANGで定義した最初の言語)に対して
+# アクターの名前、二つ名が設定されます。
+# 他の言語に対して変更したい場合は以下のフォーマットで入力します。
+# 例)
+#    <en:Eric>
+#
+# ▼イベントコマンド：名前入力の処理について
+# こちらのコマンドを実行した場合、現在の言語に関わらず
+# すべての言語に対して入力した名前が設定されます。
+#
+#------------------------------------------------------------------------------
+module Gentlawk
+  @@gentlawk_includes ||= {}
+  @@gentlawk_includes[:N_MultiLanguage] = 1.10
+  module MultiLanguage
+    #▲▽▲▽▲▽▲▽▲▽▲▽▲▽▲▽
+    #詳細設定
+        
+    # 言語の定義
+    LANG = [
+      :ja, # 日本語
+      :en, # 英語
+    ]
+    
+    # 現在の言語を保持する変数ID
+    LANG_VAR = 10
+    
+    #▲▽▲▽▲▽▲▽▲▽▲▽▲▽▲▽
+    ::Lang = self
+  end
+  class RequirementException < StandardError; end
+  def self.requirement(name, version)
+    if include?(name, version)
+      return true
+    end
+    raise RequirementException, "#{name} ver#{version}以上が導入されていません"
+  end
+  def self.include?(name, version)
+    @@gentlawk_includes[name] && @@gentlawk_includes[name] >= version
+  end
+end
+#==============================================================================
+# ■ Gentlawk::MultiLanguage::TemplateGenerator
+#==============================================================================
+module Gentlawk::MultiLanguage::TemplateGenerator
+  def make_template
+    template = ["{", format_template.flatten.map{|v| "  "+v}, "}"].flatten.join("\n")
+    open("ml_definition_template.txt", 'w') do |f|
+      f << "$gentlawk_multi_language_definition ||= {}\n"
+      f << "$gentlawk_multi_language_definition[:<設定する言語を指定>] =\n"
+      f << template
+    end
+  end
+  def format_template
+    templates = {}
+    templates[:actors] = format_data($data_actors, [:@name, :@nickname, :@description])
+    templates[:classes] = format_data($data_classes, [:@name])
+    templates[:enemies] = format_data($data_enemies, [:@name])
+    templates[:items] = format_data($data_items, [:@name, :@description])
+    templates[:skills] = format_data($data_skills, [:@name, :@description, :@message1, :@message2])
+    templates[:weapons] = format_data($data_weapons, [:@name, :@description])
+    templates[:armors] = format_data($data_armors, [:@name, :@description])
+    templates[:states] = format_data($data_states, [:@name, :@description, :@message1, :@message2, :@message3, :@message4])
+    templates[:maps] = Dir.glob("Data/Map*.rvdata2").map{|file|
+      next unless file =~ /Data\/Map(\d+).rvdata2/o
+      map = load_data(file)
+      id = $1.to_i
+      "#{id} => [\"#{Regexp.escape(map.instance_variable_get(:@display_name))}\"],"
+    }
+    templates[:elements] = format_system($data_system, :@elements)
+    templates[:skill_types] = format_system($data_system, :@skill_types)
+    templates[:weapon_types] = format_system($data_system, :@weapon_types)
+    templates[:armor_types] = format_system($data_system, :@armor_types)
+    templates[:basics] = format_system($data_system.terms, :@basic)
+    templates[:params] = format_system($data_system.terms, :@params)
+    templates[:etypes] = format_system($data_system.terms, :@etypes)
+    templates[:commands] = format_system($data_system.terms, :@commands)
+    templates[:vocabs] = Vocab.instance_variable_get(:@original_consts).map{|name, value|
+      ":#{name} => \"#{Regexp.escape(value)}\","
+    }
+    templates.map{|key, values|
+      [":#{key} => {", values.compact.map{|v| "  "+v }, "},"]
+    } + [":#{:input_tables} => [", format_input_table.flatten.map{|v| "  "+v }, "],"]
+  end
+  def format_data(game_data, names)
+    game_data.map.with_index{|data, i|
+      next nil unless data
+      values = names.map{|name| "\"#{Regexp.escape(data.instance_variable_get(name) || "")}\"" }
+      "#{i} => [#{values.join(',')}],"
+    }
+  end
+  def format_system(game_data, name)
+    game_data.instance_variable_get(name).map.with_index{|value, i|
+      next if value.empty?
+      "#{i} => [\"#{Regexp.escape(value)}\"],"
+    }
+  end
+  def format_input_table
+    tables = $game_system.japanese? ?
+      [Window_NameInput::JAPAN1, Window_NameInput::JAPAN2, Window_NameInput::JAPAN3] :
+      [Window_NameInput::LATIN1, Window_NameInput::LATIN2]
+    values = tables.map{|table|
+      ["[",
+        table.each_slice(10).map.with_index{|subs, i|
+          value = ["  "]
+          value << subs[0...5].map{|c| "'#{c}',"}
+          value << "  "
+          value << subs[5...10].map{|c| "'#{c}',"}
+          value << "  " if i % 2 == 0
+          value.join
+        },
+        "],"]
+    }
+    values
+  end
+end
+#==============================================================================
+# ■ Gentlawk::MultiLanguage
+#==============================================================================
+module Gentlawk::MultiLanguage
+  class << self; include Gentlawk::MultiLanguage::TemplateGenerator; end
+  LANG.each do |la|
+    define_singleton_method(:"#{la}?", proc{self.get == la})
+  end
+  def self.get
+    LANG[$game_variables[LANG_VAR]]
+  end
+  def self.set(lang)
+    $game_variables[LANG_VAR] = LANG.index(lang) || 0
+  end
+end
+#==============================================================================
+# ■ Gentlawk::MultiLanguage::NoteParser
+#==============================================================================
+module Gentlawk::MultiLanguage::NoteParser
+  def self.parse(str)
+    result = {}
+    str.scan(/<(.+?):(.+)>/o).each do |la,value|
+      la = la.to_sym
+      next unless Gentlawk::MultiLanguage::LANG.include?(la)
+      result[la] = value.split(',')
+    end
+    Gentlawk::MultiLanguage::LangData.new(result)
+  end
+end
+#==============================================================================
+# ■ Gentlawk::MultiLanguage::OneLinerParser
+#==============================================================================
+module Gentlawk::MultiLanguage::OneLinerParser
+  def self.parse(str)
+    return Gentlawk::MultiLanguage::LangData.new(nil) unless str.include?('||')
+    result = {}
+    str.split('||').each.with_index do |value,i|
+      la = Gentlawk::MultiLanguage::LANG[i]
+      next unless la
+      result[la] = [value]
+    end
+    Gentlawk::MultiLanguage::LangData.new(result)
+  end
+end
+#==============================================================================
+# ■ Gentlawk::MultiLanguage::LangData
+#==============================================================================
+class Gentlawk::MultiLanguage::LangData
+  def initialize(data)
+    @data = data
+  end
+  def get(index)
+    return nil unless @data
+    subset = @data[Gentlawk::MultiLanguage.get]
+    return nil unless subset
+    subset[index]
+  end
+  def set(la, index, value)
+    @data ||= {}
+    @data[la] ||= []
+    @data[la][index] = value
+  end
+  def merge_definition(type, id)
+    return self unless $gentlawk_multi_language_definition
+    $gentlawk_multi_language_definition.each do |la, definition|
+      next unless Gentlawk::MultiLanguage::LANG.include?(la)
+      data_list = definition[type]
+      next unless data_list
+      data = data_list[id]
+      next unless data
+      data.each.with_index do |value, i|
+        set(la, i, value)
+      end
+    end
+    self
+  end
+  def self.vocab(name)
+    return nil unless $gentlawk_multi_language_definition
+    definition = $gentlawk_multi_language_definition[Gentlawk::MultiLanguage.get]
+    return nil unless definition
+    vocabs = definition[:vocabs]
+    return nil unless vocabs
+    vocabs[name]
+  end
+  def self.input_table
+    return nil unless $gentlawk_multi_language_definition
+    definition = $gentlawk_multi_language_definition[Gentlawk::MultiLanguage.get]
+    return nil unless definition
+    definition[:input_tables]
+  end
+end
+#==============================================================================
+# ■ Gentlawk::MultiLanguage::SetterParser
+#==============================================================================
+module Gentlawk::MultiLanguage::SetterParser
+  def self.parse(str)
+    return str unless str =~ /^<(.+):(.+)>$/o
+    la = $1.to_sym
+    value = $2
+    return {} unless Gentlawk::MultiLanguage::LANG.include?(la)
+    {la=>value}
+  end
+end
+#==============================================================================
+# ■ RPG::Class
+#==============================================================================
+class RPG::Class < RPG::BaseItem
+  #--------------------------------------------------------------------------
+  # ● 多言語データの初期化
+  #--------------------------------------------------------------------------
+  def init_ml
+    return if @gentlawk_ml
+    # 0: name
+    @gentlawk_ml = Gentlawk::MultiLanguage::NoteParser.parse(note)
+    @gentlawk_ml.merge_definition(:classes, @id)
+  end
+  #--------------------------------------------------------------------------
+  # ● 名前の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_name name
+  def name
+    init_ml
+    @gentlawk_ml.get(0) || @name
+  end
+end
+#==============================================================================
+# ■ RPG::Item
+#==============================================================================
+class RPG::Item < RPG::UsableItem
+  #--------------------------------------------------------------------------
+  # ● 多言語データの初期化
+  #--------------------------------------------------------------------------
+  def init_ml
+    return if @gentlawk_ml
+    # 0: name
+    # 1: description
+    @gentlawk_ml = Gentlawk::MultiLanguage::NoteParser.parse(note)
+    @gentlawk_ml.merge_definition(:items, @id)
+  end
+  #--------------------------------------------------------------------------
+  # ● 名前の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_name name
+  def name
+    init_ml
+    @gentlawk_ml.get(0) || @name
+  end
+  #--------------------------------------------------------------------------
+  # ● 説明の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_description description
+  def description
+    init_ml
+    @gentlawk_ml.get(1) || @description
+  end
+end
+#==============================================================================
+# ■ RPG::Skill
+#==============================================================================
+class RPG::Skill < RPG::UsableItem
+  #--------------------------------------------------------------------------
+  # ● 多言語データの初期化
+  #--------------------------------------------------------------------------
+  def init_ml
+    return if @gentlawk_ml
+    # 0: name
+    # 1: description
+    # 2: message1
+    # 3: message2
+    @gentlawk_ml = Gentlawk::MultiLanguage::NoteParser.parse(note)
+    @gentlawk_ml.merge_definition(:skills, @id)
+  end
+  #--------------------------------------------------------------------------
+  # ● 名前の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_name name
+  def name
+    init_ml
+    @gentlawk_ml.get(0) || @name
+  end
+  #--------------------------------------------------------------------------
+  # ● 説明の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_description description
+  def description
+    init_ml
+    @gentlawk_ml.get(1) || @description
+  end
+  #--------------------------------------------------------------------------
+  # ● メッセージ1の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_message1 message1
+  def message1
+    init_ml
+    @gentlawk_ml.get(2) || @message1
+  end
+  #--------------------------------------------------------------------------
+  # ● メッセージ2の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_message2 message2
+  def message2
+    init_ml
+    @gentlawk_ml.get(3) || @message2
+  end
+end
+#==============================================================================
+# ■ RPG::Weapon
+#==============================================================================
+class RPG::Weapon < RPG::EquipItem
+  #--------------------------------------------------------------------------
+  # ● 多言語データの初期化
+  #--------------------------------------------------------------------------
+  def init_ml
+    return if @gentlawk_ml
+    # 0: name
+    # 1: description
+    @gentlawk_ml = Gentlawk::MultiLanguage::NoteParser.parse(note)
+    @gentlawk_ml.merge_definition(:weapons, @id)
+  end
+  #--------------------------------------------------------------------------
+  # ● 名前の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_name name
+  def name
+    init_ml
+    @gentlawk_ml.get(0) || @name
+  end
+  #--------------------------------------------------------------------------
+  # ● 説明の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_description description
+  def description
+    init_ml
+    @gentlawk_ml.get(1) || @description
+  end
+end
+#==============================================================================
+# ■ RPG::Armor
+#==============================================================================
+class RPG::Armor < RPG::EquipItem
+  #--------------------------------------------------------------------------
+  # ● 多言語データの初期化
+  #--------------------------------------------------------------------------
+  def init_ml
+    return if @gentlawk_ml
+    # 0: name
+    # 1: description
+    @gentlawk_ml = Gentlawk::MultiLanguage::NoteParser.parse(note)
+    @gentlawk_ml.merge_definition(:armors, @id)
+  end
+  #--------------------------------------------------------------------------
+  # ● 名前の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_name name
+  def name
+    init_ml
+    @gentlawk_ml.get(0) || @name
+  end
+  #--------------------------------------------------------------------------
+  # ● 説明の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_description description
+  def description
+    init_ml
+    @gentlawk_ml.get(1) || @description
+  end
+end
+#==============================================================================
+# ■ RPG::State
+#==============================================================================
+class RPG::State < RPG::BaseItem
+  #--------------------------------------------------------------------------
+  # ● 多言語データの初期化
+  #--------------------------------------------------------------------------
+  def init_ml
+    return if @gentlawk_ml
+    # 0: name
+    # 1: message1(味方)
+    # 2: message1(敵)
+    # 3: message1(継続)
+    # 4: message1(解除)
+    @gentlawk_ml = Gentlawk::MultiLanguage::NoteParser.parse(note)
+    @gentlawk_ml.merge_definition(:states, @id)
+  end
+  #--------------------------------------------------------------------------
+  # ● 名前の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_name name
+  def name
+    init_ml
+    @gentlawk_ml.get(0) || @name
+  end
+  #--------------------------------------------------------------------------
+  # ● メッセージ1の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_message1 message1
+  def message1
+    init_ml
+    @gentlawk_ml.get(1) || @message1
+  end
+  #--------------------------------------------------------------------------
+  # ● メッセージ1の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_message2 message2
+  def message2
+    init_ml
+    @gentlawk_ml.get(2) || @message2
+  end
+  #--------------------------------------------------------------------------
+  # ● メッセージ1の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_message3 message3
+  def message3
+    init_ml
+    @gentlawk_ml.get(3) || @message3
+  end
+  #--------------------------------------------------------------------------
+  # ● メッセージ4の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_message4 message4
+  def message4
+    init_ml
+    @gentlawk_ml.get(4) || @message4
+  end
+end
+#==============================================================================
+# ■ RPG::System
+#==============================================================================
+class RPG::System
+  #--------------------------------------------------------------------------
+  # ● 多言語データの初期化
+  #--------------------------------------------------------------------------
+  def init_ml
+    return if @gentlawk_ml_title
+    # ゲームタイトル
+    # @gentlawk_ml_title = Gentlawk::MultiLanguage::OneLinerParser.parse(@game_title)
+    # @gentlawk_ml_title.merge_definition(:title, 1)
+    # 属性名
+    @gentlawk_ml_elements = @elements.map.with_index{|name, index|
+      ml = Gentlawk::MultiLanguage::OneLinerParser.parse(name)
+      ml.merge_definition(:elements, index)
+    }
+    # スキルタイプ
+    @gentlawk_ml_skill_types = @skill_types.map.with_index{|name, index|
+      ml = Gentlawk::MultiLanguage::OneLinerParser.parse(name)
+      ml.merge_definition(:skill_types, index)
+    }
+    # 武器タイプ
+    @gentlawk_ml_weapon_types = @weapon_types.map.with_index{|name, index|
+      ml = Gentlawk::MultiLanguage::OneLinerParser.parse(name)
+      ml.merge_definition(:weapon_types, index)
+    }
+    # 防具タイプ
+    @gentlawk_ml_armor_types = @armor_types.map.with_index{|name, index|
+      ml = Gentlawk::MultiLanguage::OneLinerParser.parse(name)
+      ml.merge_definition(:armor_types, index)
+    }
+  end
+  #--------------------------------------------------------------------------
+  # ● ゲームタイトルの取得
+  #--------------------------------------------------------------------------
+  # alias gentlawk_multilanguage_game_title game_title
+  # def game_title
+  #   init_ml
+  #   @gentlawk_ml_title.get(0) || @game_title
+  # end
+  #--------------------------------------------------------------------------
+  # ● 属性名の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_elements elements
+  def elements
+    init_ml
+    (0...@elements.size).map{|i| @gentlawk_ml_elements[i].get(0) || @elements[i] }
+  end
+  #--------------------------------------------------------------------------
+  # ● スキルタイプの取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_skill_types skill_types
+  def skill_types
+    init_ml
+    (0...@skill_types.size).map{|i| @gentlawk_ml_skill_types[i].get(0) || @skill_types[i] }
+  end
+  #--------------------------------------------------------------------------
+  # ● 武器タイプの取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_weapon_types weapon_types
+  def weapon_types
+    init_ml
+    (0...@weapon_types.size).map{|i| @gentlawk_ml_weapon_types[i].get(0) || @weapon_types[i] }
+  end
+  #--------------------------------------------------------------------------
+  # ● 防具タイプの取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_armor_types armor_types
+  def armor_types
+    init_ml
+    (0...@armor_types.size).map{|i| @gentlawk_ml_armor_types[i].get(0) || @armor_types[i] }
+  end
+end
+#==============================================================================
+# ■ RPG::System::Terms
+#==============================================================================
+class RPG::System::Terms
+  #--------------------------------------------------------------------------
+  # ● 多言語データの初期化
+  #--------------------------------------------------------------------------
+  def init_ml
+    return if @gentlawk_ml_basic
+    # 基本ステータス
+    @gentlawk_ml_basic = @basic.map.with_index{|name, index|
+      ml = Gentlawk::MultiLanguage::OneLinerParser.parse(name)
+      ml.merge_definition(:basics, index)
+    }
+    # 能力値
+    @gentlawk_ml_params = @params.map.with_index{|name, index|
+      ml = Gentlawk::MultiLanguage::OneLinerParser.parse(name)
+      ml.merge_definition(:params, index)
+    }
+    # 装備タイプ
+    @gentlawk_ml_etypes = @etypes.map.with_index{|name, index|
+      ml = Gentlawk::MultiLanguage::OneLinerParser.parse(name)
+      ml.merge_definition(:etypes, index)
+    }
+    # コマンド
+    @gentlawk_ml_commands = @commands.map.with_index{|name, index|
+      ml = Gentlawk::MultiLanguage::OneLinerParser.parse(name)
+      ml.merge_definition(:commands, index)
+    }
+  end
+  #--------------------------------------------------------------------------
+  # ● 基本ステータスの取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_basic basic
+  def basic
+    init_ml
+    (0...@basic.size).map{|i| @gentlawk_ml_basic[i].get(0) || @basic[i] }
+  end
+  #--------------------------------------------------------------------------
+  # ● 能力値の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_params params
+  def params
+    init_ml
+    (0...@params.size).map{|i| @gentlawk_ml_params[i].get(0) || @params[i] }
+  end
+  #--------------------------------------------------------------------------
+  # ● 装備タイプの取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_etypes etypes
+  def etypes
+    init_ml
+    (0...@etypes.size).map{|i| @gentlawk_ml_etypes[i].get(0) || @etypes[i] }
+  end
+  #--------------------------------------------------------------------------
+  # ● コマンドの取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_commands commands
+  def commands
+    init_ml
+    (0...@commands.size).map{|i| @gentlawk_ml_commands[i].get(0) || @commands[i] }
+  end
+end
+#==============================================================================
+# ■ Vocab
+#==============================================================================
+module Vocab
+  @original_consts = {}
+  constants.each do |name|
+    @original_consts[name] = const_get(name)
+    remove_const(name)
+  end
+  def self.const_missing(name)
+    ml_const = Gentlawk::MultiLanguage::LangData.vocab(name)
+    ml_const || @original_consts[name]
+  end
+end
+#==============================================================================
+# ■ Game_Map
+#==============================================================================
+class Game_Map
+  #--------------------------------------------------------------------------
+  # ● セットアップ
+  #--------------------------------------------------------------------------
+  alias gnetlawk_multilanguage_setup setup
+  def setup(map_id)
+    gnetlawk_multilanguage_setup(map_id)
+    init_ml
+  end
+  #--------------------------------------------------------------------------
+  # ● 多言語データの初期化
+  #--------------------------------------------------------------------------
+  def init_ml
+    # 0: display_name
+    @gentlawk_ml = Gentlawk::MultiLanguage::NoteParser.parse(@map.note)
+    @gentlawk_ml.merge_definition(:maps, @map_id)
+  end
+  #--------------------------------------------------------------------------
+  # ● 表示名の取得
+  #--------------------------------------------------------------------------
+  def display_name
+    @gentlawk_ml.get(0) || @map.display_name
+  end
+end
+#==============================================================================
+# ■ Game_Actor
+#==============================================================================
+class Game_Actor < Game_Battler
+  #--------------------------------------------------------------------------
+  # ● オブジェクト初期化
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_initialize initialize
+  def initialize(actor_id)
+    gentlawk_multilanguage_initialize(actor_id)
+    init_ml
+  end
+  #--------------------------------------------------------------------------
+  # ● 多言語データの初期化
+  #--------------------------------------------------------------------------
+  def init_ml
+    # 0: name
+    # 1: nickname
+    # 2: description
+    @gentlawk_ml = Gentlawk::MultiLanguage::NoteParser.parse(actor.note)
+    @gentlawk_ml.merge_definition(:actors, @actor_id)
+  end
+  #--------------------------------------------------------------------------
+  # ● 多言語データ構造の初期値を取得
+  #--------------------------------------------------------------------------
+  def initial_ml_data
+    [
+      @name,
+      @nickname,
+      actor.description,
+    ]
+  end
+  #--------------------------------------------------------------------------
+  # ● 名前の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_name name
+  def name
+    @gentlawk_ml.get(0) || @name
+  end
+  #--------------------------------------------------------------------------
+  # ● 二つ名の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_nickname nickname
+  def nickname
+    @gentlawk_ml.get(1) || @nickname
+  end
+  #--------------------------------------------------------------------------
+  # ● 説明の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_description description
+  def description
+    @gentlawk_ml.get(2) || actor.description
+  end
+  #--------------------------------------------------------------------------
+  # ● 特定言語の名前を変更
+  #--------------------------------------------------------------------------
+  def change_ml_name(la, name)
+    @gentlawk_ml.set(la, 0, name)
+  end
+  #--------------------------------------------------------------------------
+  # ● 特定言語の名前を削除
+  #--------------------------------------------------------------------------
+  def clear_ml_name(la)
+    @gentlawk_ml.set(la, 0, nil)
+  end
+  #--------------------------------------------------------------------------
+  # ● 特定言語の二つ名を変更
+  #--------------------------------------------------------------------------
+  def change_ml_nickname(la, nickname)
+    @gentlawk_ml.set(la, 1, nickname)
+  end
+  #--------------------------------------------------------------------------
+  # ● 特定言語の二つ名を削除
+  #--------------------------------------------------------------------------
+  def clear_ml_nickname(la)
+    @gentlawk_ml.set(la, 1, nil)
+  end
+end
+#==============================================================================
+# ■ Game_Enemy
+#==============================================================================
+class Game_Enemy < Game_Battler
+  #--------------------------------------------------------------------------
+  # ● オブジェクト初期化
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_initialize initialize
+  def initialize(index, enemy_id)
+    gentlawk_multilanguage_initialize(index, enemy_id)
+    init_ml
+  end
+  #--------------------------------------------------------------------------
+  # ● 多言語データの初期化
+  #--------------------------------------------------------------------------
+  def init_ml
+    # 0: name
+    @gentlawk_ml = Gentlawk::MultiLanguage::NoteParser.parse(enemy.note)
+    @gentlawk_ml.merge_definition(:enemies, @enemy_id)
+  end
+  #--------------------------------------------------------------------------
+  # ● 名前の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_original_name original_name
+  def original_name
+    @gentlawk_ml.get(0) || @original_name
+  end
+  #--------------------------------------------------------------------------
+  # ● 表示名の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_name name
+  def name
+    original_name + (plural ? letter : "")
+  end
+end
+#==============================================================================
+# ■ Game_Interpreter
+#==============================================================================
+class Game_Interpreter
+  #--------------------------------------------------------------------------
+  # ● 名前の変更
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_command_320 command_320
+  def command_320
+    actor = $game_actors[@params[0]]
+    return unless actor
+    names = Gentlawk::MultiLanguage::SetterParser.parse(@params[1])
+    names = {Gentlawk::MultiLanguage::LANG[0] => @params[1]} unless names.is_a?(Hash)
+    names.each do |la, name|
+      actor.change_ml_name(la, name)
+    end
+  end
+  #--------------------------------------------------------------------------
+  # ● 二つ名の変更
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_command_324 command_324
+  def command_324
+    actor = $game_actors[@params[0]]
+    return unless actor
+    names = Gentlawk::MultiLanguage::SetterParser.parse(@params[1])
+    names = {Gentlawk::MultiLanguage::LANG[0] => @params[1]} unless names.is_a?(Hash)
+    names.each do |la, nickname|
+      actor.change_ml_nickname(la, nickname)
+    end
+  end
+end
+#==============================================================================
+# ■ Window_NameInput
+#==============================================================================
+class Window_NameInput < Window_Selectable
+  #--------------------------------------------------------------------------
+  # ● 文字表の取得
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_table table
+  def table
+    ml_table = Gentlawk::MultiLanguage::LangData.input_table
+    ml_table || gentlawk_multilanguage_table
+  end
+end
+#==============================================================================
+# ■ Scene_Name
+#==============================================================================
+class Scene_Name < Scene_MenuBase
+  #--------------------------------------------------------------------------
+  # ● 入力［決定］
+  #--------------------------------------------------------------------------
+  alias gentlawk_multilanguage_on_input_ok on_input_ok
+  def on_input_ok
+    # ベースの名前を変更するため翻訳データは削除
+    Gentlawk::MultiLanguage::LANG.each do |la|
+      @actor.clear_ml_name(la)
+    end
+    gentlawk_multilanguage_on_input_ok
+  end
+end
